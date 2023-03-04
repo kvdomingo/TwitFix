@@ -1,0 +1,13 @@
+{
+    "config": {
+        "appname": "vxTwitter",
+        "color": "#43B581",
+        "combination_method": "local",
+        "database": "[url to mongo database goes here]",
+        "gifConvertAPI": "",
+        "link_cache": "json",
+        "repo": "https://github.com/dylanpdx/BetterTwitFix",
+        "table": "TwiFix",
+        "url": "https://vxtwitter.com"
+    }
+}

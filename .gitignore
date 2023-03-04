@@ -1,7 +1,7 @@
-config.json
+twitfix/config.json
 __pycache__
 venv/
-links.json
+twitfix/links.json
 node_modules
 #SERVERLESS STUFF
 admin.env

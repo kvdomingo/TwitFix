@@ -2,14 +2,14 @@ import os
 
 os.environ["RUNNING_TESTS"] = "1"
 
+import cache
 from flask.testing import FlaskClient
 
-import cache
-import msgs
 import twExtract
-import twitfix
+from twitfix import constants, utils
+from twitfix.app import app
 
-client = FlaskClient(twitfix.app)
+client = FlaskClient(app)
 
 testTextTweet = "https://twitter.com/jack/status/20"
 testVideoTweet = "https://twitter.com/Twitter/status/1263145271946551300"
@@ -104,17 +104,19 @@ testPoll_comparePollVNF = {
 }
 
 
-def compareDict(original, compare):
+def compare_dict(original, compare):
     for key in original:
         assert key in compare
         if type(compare[key]) is not dict:
             assert compare[key] == original[key]
         else:
-            compareDict(original[key], compare[key])
+            compare_dict(original[key], compare[key])
 
 
-## Tweet retrieve tests ##
-def test_textTweetExtract():
+# Tweet retrieve tests
+
+
+def test_text_tweet_extract():
     tweet = twExtract.extractStatus(testTextTweet)
     assert tweet["full_text"] == textVNF_compare["description"]
     assert tweet["user"]["screen_name"] == "jack"
@@ -122,7 +124,7 @@ def test_textTweetExtract():
     assert tweet["is_quote_status"] == False
 
 
-def test_videoTweetExtract():
+def test_video_tweet_extract():
     tweet = twExtract.extractStatus(testVideoTweet)
     assert tweet["full_text"] == videoVNF_compare["description"]
     assert tweet["user"]["screen_name"] == "Twitter"
@@ -134,7 +136,7 @@ def test_videoTweetExtract():
     assert tweet["is_quote_status"] == False
 
 
-def test_mediaTweetExtract():
+def test_media_tweet_extract():
     tweet = twExtract.extractStatus(testMediaTweet)
     assert tweet["full_text"] == testMedia_compare["description"]
     assert tweet["user"]["screen_name"] == "Twitter"
@@ -146,7 +148,7 @@ def test_mediaTweetExtract():
     assert tweet["is_quote_status"] == False
 
 
-def test_multimediaTweetExtract():
+def test_multimedia_tweet_extract():
     tweet = twExtract.extractStatus(testMultiMediaTweet)
     assert tweet["full_text"] == testMultiMedia_compare["description"]
     assert tweet["user"]["screen_name"] == "Twitter"
@@ -160,45 +162,45 @@ def test_multimediaTweetExtract():
     assert video["type"] == "photo"
 
 
-def test_pollTweetExtract():
+def test_poll_tweet_extract():
     tweet = twExtract.extractStatus(
         "https://twitter.com/norm/status/651169346518056960"
     )
     assert "card" in tweet
-    compareDict(testPoll_comparePoll, tweet["card"])
+    compare_dict(testPoll_comparePoll, tweet["card"])
 
 
-## VNF conversion test ##
+# VNF conversion test
 
 
-def test_textTweetVNF():
-    vnf = twitfix.link_to_vnf_from_unofficial_api(testTextTweet)
-    compareDict(textVNF_compare, vnf)
+def test_text_tweet_vnf():
+    vnf = utils.link_to_vnf_from_unofficial_api(testTextTweet)
+    compare_dict(textVNF_compare, vnf)
 
 
-def test_videoTweetVNF():
-    vnf = twitfix.link_to_vnf_from_unofficial_api(testVideoTweet)
+def test_video_tweet_vnf():
+    vnf = utils.link_to_vnf_from_unofficial_api(testVideoTweet)
 
-    compareDict(videoVNF_compare, vnf)
-
-
-def test_mediaTweetVNF():
-    vnf = twitfix.link_to_vnf_from_unofficial_api(testMediaTweet)
-    compareDict(testMedia_compare, vnf)
+    compare_dict(videoVNF_compare, vnf)
 
 
-def test_multimediaTweetVNF():
-    vnf = twitfix.link_to_vnf_from_unofficial_api(testMultiMediaTweet)
-    compareDict(testMultiMedia_compare, vnf)
+def test_media_tweet_vnf():
+    vnf = utils.link_to_vnf_from_unofficial_api(testMediaTweet)
+    compare_dict(testMedia_compare, vnf)
 
 
-def test_pollTweetVNF():
-    vnf = twitfix.link_to_vnf_from_unofficial_api(testPollTweet)
-    compareDict(testPoll_comparePollVNF, vnf["poll"])
+def test_multimedia_tweet_vnf():
+    vnf = utils.link_to_vnf_from_unofficial_api(testMultiMediaTweet)
+    compare_dict(testMultiMedia_compare, vnf)
 
 
-def test_qrtTweet():
-    cache.clearCache()
+def test_poll_tweet_vnf():
+    vnf = utils.link_to_vnf_from_unofficial_api(testPollTweet)
+    compare_dict(testPoll_comparePollVNF, vnf["poll"])
+
+
+def test_qrt_tweet():
+    cache.clear_cache()
     # this is an incredibly lazy test, todo: improve it in the future
     resp = client.get(
         testQRTTweet.replace("https://twitter.com", ""), headers={"User-Agent": "test"}
@@ -212,7 +214,7 @@ def test_qrtTweet():
     )  # get top level tweet
     assert resp.status_code == 200
     assert "Please retweet this to spread awareness for retweets" in str(resp.data)
-    qtd_tweet = cache.getVnfFromLinkCache(
+    qtd_tweet = cache.get_vnf_from_link_cache(
         "https://twitter.com/EliLanger/status/585253161260216320"
     )  # check that the quoted tweet for the top level tweet is cached
     assert qtd_tweet is not None
@@ -220,7 +222,7 @@ def test_qrtTweet():
         qtd_tweet["qrtURL"] is not None
     )  # check that the quoted tweet for the top level tweet has a qrtURL
     assert (
-        cache.getVnfFromLinkCache(
+        cache.get_vnf_from_link_cache(
             "https://twitter.com/EliLanger/status/313143446842007553"
         )
         is None
@@ -230,15 +232,15 @@ def test_qrtTweet():
     )  # get mid level tweet
     assert resp.status_code == 200
     assert (
-        cache.getVnfFromLinkCache(
+        cache.get_vnf_from_link_cache(
             "https://twitter.com/EliLanger/status/313143446842007553"
         )
         is not None
     )  # check that the bottom level tweet has been cached now
 
 
-def test_qrtVideoTweet():
-    cache.clearCache()
+def test_qrt_video_tweet():
+    cache.clear_cache()
     # this is an incredibly lazy test, todo: improve it in the future
     resp = client.get(
         testQrtVideoTweet.replace("https://twitter.com", ""),
@@ -251,23 +253,25 @@ def test_qrtVideoTweet():
     )
 
 
-## Test adding to cache ; cache should be empty ##
-def test_addToCache():
-    cache.clearCache()
-    twitfix.vnfFromCacheOrDL(testTextTweet)
-    twitfix.vnfFromCacheOrDL(testVideoTweet)
-    twitfix.vnfFromCacheOrDL(testMediaTweet)
-    twitfix.vnfFromCacheOrDL(testMultiMediaTweet)
+# Test adding to cache ; cache should be empty
+def test_add_to_cache():
+    cache.clear_cache()
+    utils.vnf_from_cache_or_dl(testTextTweet)
+    utils.vnf_from_cache_or_dl(testVideoTweet)
+    utils.vnf_from_cache_or_dl(testMediaTweet)
+    utils.vnf_from_cache_or_dl(testMultiMediaTweet)
     # retrieve
-    compareDict(textVNF_compare, cache.getVnfFromLinkCache(testTextTweet))
-    compareDict(videoVNF_compare, cache.getVnfFromLinkCache(testVideoTweet))
-    compareDict(testMedia_compare, cache.getVnfFromLinkCache(testMediaTweet))
-    compareDict(testMultiMedia_compare, cache.getVnfFromLinkCache(testMultiMediaTweet))
-    cache.clearCache()
+    compare_dict(textVNF_compare, cache.get_vnf_from_link_cache(testTextTweet))
+    compare_dict(videoVNF_compare, cache.get_vnf_from_link_cache(testVideoTweet))
+    compare_dict(testMedia_compare, cache.get_vnf_from_link_cache(testMediaTweet))
+    compare_dict(
+        testMultiMedia_compare, cache.get_vnf_from_link_cache(testMultiMediaTweet)
+    )
+    cache.clear_cache()
 
 
-def test_embedFromScratch():
-    cache.clearCache()
+def test_embed_from_scratch():
+    cache.clear_cache()
     client.get(
         testTextTweet.replace("https://twitter.com", ""), headers={"User-Agent": "test"}
     )
@@ -285,12 +289,12 @@ def test_embedFromScratch():
     )
 
 
-def test_embedFromCache():
-    cache.clearCache()
-    twitfix.vnfFromCacheOrDL(testTextTweet)
-    twitfix.vnfFromCacheOrDL(testVideoTweet)
-    twitfix.vnfFromCacheOrDL(testMediaTweet)
-    twitfix.vnfFromCacheOrDL(testMultiMediaTweet)
+def test_embed_from_cache():
+    cache.clear_cache()
+    utils.vnf_from_cache_or_dl(testTextTweet)
+    utils.vnf_from_cache_or_dl(testVideoTweet)
+    utils.vnf_from_cache_or_dl(testMediaTweet)
+    utils.vnf_from_cache_or_dl(testMultiMediaTweet)
     # embed time
     resp = client.get(
         testTextTweet.replace("https://twitter.com", ""), headers={"User-Agent": "test"}
@@ -313,9 +317,9 @@ def test_embedFromCache():
     assert resp.status_code == 200
 
 
-def test_veryLongEmbed():
-    cache.clearCache()
-    cache.setCache(
+def test_very_long_embed():
+    cache.clear_cache()
+    cache.set_cache(
         {
             "https://twitter.com/TEST/status/1234": {
                 "description": "A" * 1024,
@@ -343,8 +347,9 @@ def test_veryLongEmbed():
     assert resp.status_code == 200
 
 
-def test_embedFromOutdatedCache():  # presets a cache that has VNF's with missing fields; there's probably a better way to do this
-    cache.setCache(
+def test_embed_from_outdated_cache():
+    # presets a cache that has VNF's with missing fields; there's probably a better way to do this
+    cache.set_cache(
         {
             "https://twitter.com/Twitter/status/1118295916874739714": {
                 "description": "On profile pages, we used to only show someone’s replies, not the original Tweet 🙄 Now we’re showing both so you can follow the conversation more easily! https://t.co/LSBEZYFqmY",
@@ -498,11 +503,11 @@ def test_message404():
         "https://twitter.com/jack/status/12345", headers={"User-Agent": "test"}
     )
     assert resp.status_code == 200
-    assert msgs.tweetNotFound in str(resp.data)
+    assert constants.tweet_not_found in str(resp.data)
 
 
 def test_combine():
-    twt, e = twitfix.vnfFromCacheOrDL(testMultiMediaTweet)
+    twt, e = utils.vnf_from_cache_or_dl(testMultiMediaTweet)
     img1 = twt["images"][0]
     img2 = twt["images"][1]
     resp = client.get(

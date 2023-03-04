@@ -5,10 +5,12 @@ from datetime import date, datetime
 import boto3
 import pymongo
 
-from configHandler import config
+from twitfix.config_handler import config
 
 link_cache_system = config["config"]["link_cache"]
+
 link_cache = {}
+
 DYNAMO_CACHE_TBL = None
 if link_cache_system == "dynamodb":  # pragma: no cover
     DYNAMO_CACHE_TBL = config["config"]["table"]
@@ -20,9 +22,7 @@ if link_cache_system == "json":
             default_link_cache = {}
             json.dump(default_link_cache, outfile)
     try:
-        f = open(
-            "links.json",
-        )
+        f = open("links.json")
         link_cache = json.load(f)
     except json.decoder.JSONDecodeError:
         print(" ➤ [ X ] Failed to load cache JSON file. Creating new file.")
@@ -45,18 +45,18 @@ elif link_cache_system == "dynamodb":  # pragma: no cover
     client = boto3.resource("dynamodb")
 
 
-def serializeUnknown(obj):
+def serialize_unknown(obj):
     if isinstance(obj, (datetime, date)):
         return obj.isoformat()
     raise TypeError("Type %s not serializable" % type(obj))
 
 
-def addVnfToLinkCache(video_link, vnf):
+def add_vnf_to_link_cache(video_link, vnf):
     video_link = video_link.lower()
     global link_cache
     try:
         if link_cache_system == "db":
-            out = db.linkCache.update_one(vnf)
+            db.linkCache.update_one(vnf)
             print(" ➤ [ + ] Link added to DB cache ")
             return True
         elif link_cache_system == "json":
@@ -67,7 +67,7 @@ def addVnfToLinkCache(video_link, vnf):
                     outfile,
                     indent=4,
                     sort_keys=True,
-                    default=serializeUnknown,
+                    default=serialize_unknown,
                 )
             print(" ➤ [ + ] Link added to JSON cache ")
             return True
@@ -86,14 +86,13 @@ def addVnfToLinkCache(video_link, vnf):
         return False
 
 
-def getVnfFromLinkCache(video_link):
+def get_vnf_from_link_cache(video_link):
     video_link = video_link.lower()
     global link_cache
     if link_cache_system == "db":
         collection = db.linkCache
         vnf = collection.find_one({"tweet": video_link})
-        # print(vnf)
-        if vnf != None:
+        if vnf is not None:
             hits = vnf["hits"] + 1
             print(
                 " ➤ [ ✔ ] Link located in DB cache. "
@@ -103,7 +102,7 @@ def getVnfFromLinkCache(video_link):
             )
             query = {"tweet": video_link}
             change = {"$set": {"hits": hits}}
-            out = db.linkCache.update_one(query, change)
+            db.linkCache.update_one(query, change)
             return vnf
         else:
             print(" ➤ [ X ] Link not in DB cache")
@@ -138,18 +137,18 @@ def getVnfFromLinkCache(video_link):
         return None
 
 
-def clearCache():
+def clear_cache():
     global link_cache
     # only intended for use in tests
     if link_cache_system == "ram":
         link_cache = {}
 
 
-def setCache(value):
-    newCache = {}
+def set_cache(value):
+    new_cache = {}
     for key in value:
-        newCache[key.lower()] = value[key]
+        new_cache[key.lower()] = value[key]
     global link_cache
     # only intended for use in tests
     if link_cache_system == "ram":
-        link_cache = newCache
+        link_cache = new_cache

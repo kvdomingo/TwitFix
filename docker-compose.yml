@@ -26,4 +26,3 @@ services:
     container_name: twitfix_db
     volumes:
       - "./db:/data/db"
-

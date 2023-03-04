@@ -14,7 +14,7 @@ provider:
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource:
-        - { "Fn::GetAtt": ["vxTwitterDynamoTable", "Arn" ] }
+        - { "Fn::GetAtt": [ "vxTwitterDynamoTable", "Arn" ] }
   environment:
     VXTWITTER_CACHE_TABLE: ${self:custom.tableName}
     RUNNING_SERVERLESS: 1
@@ -57,19 +57,17 @@ custom:
     layer: true
     dockerizePip: false
 
-	
+
 resources:
   Resources:
     vxTwitterDynamoTable:
       Type: 'AWS::DynamoDB::Table'
       Properties:
         AttributeDefinitions:
-          -
-            AttributeName: tweet
+          - AttributeName: tweet
             AttributeType: S
         KeySchema:
-          -
-            AttributeName: tweet
+          - AttributeName: tweet
             KeyType: HASH
         TableName: ${self:custom.tableName}
         BillingMode: PAY_PER_REQUEST

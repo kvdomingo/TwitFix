@@ -37,4 +37,3 @@ To run and build, use this command:
 ```bash
 docker-compose up -d --build
 ```
-

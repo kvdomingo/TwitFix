@@ -1,0 +1,44 @@
+version: '3'
+
+env:
+  NAME: twitfix-dev
+
+dotenv:
+  - .env
+
+tasks:
+  default:
+    desc: Build and start Docker containers
+    cmds:
+      - docker compose -p {{.NAME}} up -d --build --remove-orphans {{.CLI_ARGS}}
+      - task logs
+
+  logs:
+    desc: Attach to Docker logs
+    cmds:
+      - docker compose -p {{.NAME}} logs --follow {{.CLI_ARGS}}
+
+  shutdown:
+    desc: Stop containers
+    cmds:
+      - docker compose -p {{.NAME}} stop {{.CLI_ARGS}}
+
+  restart:
+    desc: Restart containers
+    cmds:
+      - docker compose -p {{.NAME}} restart {{.CLI_ARGS}}
+
+  exec:
+    desc: Run a command in the specified container
+    cmds:
+      - docker compose -p {{.NAME}} exec -- {{.CLI_ARGS}}
+
+  reload-proxy:
+    desc: Reload proxy config
+    cmds:
+      - docker compose -p {{.NAME}} exec -- proxy nginx -s reload
+
+  clean:
+    desc: Remove containers
+    cmds:
+      - docker compose -p {{.NAME}} down -v --remove-orphans {{.CLI_ARGS}}

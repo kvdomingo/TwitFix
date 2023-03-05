@@ -1,30 +1,26 @@
-FROM python:3.6-alpine AS build
+FROM python:3.10-alpine AS build
 
-RUN apk add build-base python3-dev linux-headers pcre-dev jpeg-dev zlib-dev
+ENV POETRY_VERSION 1.3.1
+
+RUN apk add build-base python3-dev linux-headers pcre-dev jpeg-dev zlib-dev pcre-dev
 
 RUN pip install --upgrade pip
 
-RUN pip install yt-dlp pillow uwsgi
+RUN pip install yt-dlp pillow
 
-FROM python:3.6-alpine AS deps
+RUN pip install "poetry==$POETRY_VERSION"
 
 WORKDIR /twitfix
 
-COPY requirements.txt requirements.txt
-COPY --from=build /usr/local/lib/python3.6/site-packages /usr/local/lib/python3.6/site-packages
+COPY pyproject.toml poetry.lock ./
 
-RUN pip install -r requirements.txt
+RUN poetry export -f requirements.txt --without-hashes | pip install -r /dev/stdin
 
-FROM python:3.6-alpine AS runner
+WORKDIR /twitfix
+
+COPY --from=build /usr/local/bin/uwsgi /usr/local/bin/uwsgi
+COPY . .
 
 EXPOSE 9000
 
-RUN apk add pcre-dev jpeg-dev zlib-dev
-
-WORKDIR /twitfix
-
-CMD ["uwsgi", "twitfix.ini"]
-
-COPY --from=build /usr/local/bin/uwsgi /usr/local/bin/uwsgi
-COPY --from=deps /usr/local/lib/python3.6/site-packages /usr/local/lib/python3.6/site-packages
-COPY . .
+ENTRYPOINT [ "gunicorn", "--config", "gunicorn.conf.py", "--bind", "0.0.0.0:9000" ]

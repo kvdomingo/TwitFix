@@ -1,0 +1,11 @@
+[flake8]
+ignore =
+  E501
+  W503
+  C901
+extend-exclude =
+  .git
+  .github
+  .venv
+  __pycache__
+max-complexity = 10

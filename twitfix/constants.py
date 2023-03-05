@@ -33,3 +33,7 @@ TWEET_SUSPENDED = "This Tweet is from a suspended account."
 TWEET_DESC_LIMIT = 340
 
 APP_HOSTNAME = "qxtwitter.com"
+
+APP_NAME = "qxTwitter"
+
+GITHUB_REPO = "kvdomingo/TwitFix"

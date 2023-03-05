@@ -1,18 +1,18 @@
 import json
 import os
 
-from twitfix.constants import BASE_DIR
+from twitfix.constants import APP_HOSTNAME, APP_NAME, BASE_DIR, GITHUB_REPO
 
 if os.environ.get("RUNNING_TESTS"):
     config = {
         "config": {
-            "link_cache": "ram",
+            "link_cache": "memory",
             "database": "",
             "table": "",
             "color": "",
-            "appname": "vxTwitter",
-            "repo": "https://github.com/dylanpdx/BetterTwitFix",
-            "url": "https://vxtwitter.com",
+            "appname": APP_NAME,
+            "repo": f"https://github.com/{GITHUB_REPO}",
+            "url": f"https://{APP_HOSTNAME}",
             "combination_method": "local",
             "gifConvertAPI": "",
         }
@@ -20,16 +20,15 @@ if os.environ.get("RUNNING_TESTS"):
 elif os.environ.get("RUNNING_SERVERLESS") == "1":  # pragma: no cover
     config = {
         "config": {
-            "link_cache": os.environ["VXTWITTER_LINK_CACHE"],
+            "link_cache": "memory",
             "database": os.environ["VXTWITTER_DATABASE"],
             "table": os.environ["VXTWITTER_CACHE_TABLE"],
             "color": os.environ["VXTWITTER_COLOR"],
-            "appname": os.environ["VXTWITTER_APP_NAME"],
-            "repo": os.environ["VXTWITTER_REPO"],
-            "url": os.environ["VXTWITTER_URL"],
-            "combination_method": os.environ[
-                "VXTWITTER_COMBINATION_METHOD"
-            ],  # can either be 'local' or a URL to a server handling requests in the same format
+            "appname": APP_NAME,
+            "repo": f"https://github.com/{GITHUB_REPO}",
+            "url": f"https://{APP_HOSTNAME}",
+            "combination_method": os.environ["VXTWITTER_COMBINATION_METHOD"],
+            # can either be 'local' or a URL to a server handling requests in the same format
             "gifConvertAPI": os.environ["VXTWITTER_GIF_CONVERT_API"],
         }
     }
@@ -39,18 +38,18 @@ else:
         with open(path, "w+") as outfile:
             default_config = {
                 "config": {
-                    "link_cache": "json",
+                    "link_cache": "memory",
                     "database": "[url to mongo database goes here]",
                     "table": "TwiFix",
                     "color": "#43B581",
-                    "appname": "vxTwitter",
-                    "repo": "https://github.com/dylanpdx/BetterTwitFix",
-                    "url": "https://vxtwitter.com",
-                    "combination_method": "local",  # can either be 'local' or a URL to a server handling requests in the same format
+                    "appname": APP_NAME,
+                    "repo": f"https://github.com/{GITHUB_REPO}",
+                    "url": f"https://{APP_HOSTNAME}",
+                    "combination_method": "local",
+                    # can either be 'local' or a URL to a server handling requests in the same format
                     "gifConvertAPI": "",
                 }
             }
-
             json.dump(default_config, outfile, indent=4, sort_keys=True)
         config = default_config
     else:

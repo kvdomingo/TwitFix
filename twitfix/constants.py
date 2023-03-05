@@ -26,7 +26,7 @@ FAILED_TO_SCAN = "Failed to scan your link! This may be due to an incorrect link
 
 FAILED_TO_SCAN_EXTRA = "\n\nTwitter gave me this error: "
 
-TWEET_NOT_FOUND = "Tweet not found."
+TWEET_NOT_FOUND = "deleted tweet"
 
 TWEET_SUSPENDED = "This Tweet is from a suspended account."
 

@@ -148,7 +148,7 @@ async def render_combined():
             + "/rendercombined.jpg?imgs="
             + images
         )
-        return redirect(url, 302)
+        return redirect(url, HTTPStatus.TEMPORARY_REDIRECT)
     # Redirecting here instead of setting the embed URL directly to this because if the config combination_method
     # changes in the future, old URLs will still work
 
@@ -164,7 +164,7 @@ async def render_combined():
     final_img = final_img.convert("RGB")
     final_img.save(img_io, "JPEG", quality=70)
     img_io.seek(0)
-    return send_file(img_io, mimetype="image/jpeg")
+    return await send_file(img_io, mimetype="image/jpeg")
 
 
 if __name__ == "__main__":

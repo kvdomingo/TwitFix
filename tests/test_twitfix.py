@@ -1,10 +1,11 @@
+# flake8: noqa: E402
+import quart.flask_patch  # isort:skip
 import os
-
-from loguru import logger
 
 os.environ["RUNNING_TESTS"] = "1"
 
 import pytest
+from loguru import logger
 from quart.testing import QuartClient
 
 from twExtract import extract_status

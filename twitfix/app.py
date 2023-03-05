@@ -8,7 +8,7 @@ from loguru import logger
 from quart import Quart, abort, redirect, request, send_file, send_from_directory
 from quart_cors import cors
 
-from combineImg import gen_image_from_url
+from combine_img import gen_image_from_url
 from twitfix.config_handler import config
 from twitfix.constants import APP_HOSTNAME, GENERATE_EMBED_USER_AGENTS, PATH_REGEX
 from twitfix.utils import (

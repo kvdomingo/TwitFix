@@ -31,7 +31,6 @@ def format_embed_desc(type_, body, qrt, poll_display, likes_display):
         poll_display = ""
 
     if qrt is not None and not (type_ == "" or type_ == "Video"):
-
         qrt_display = gen_qrt_display(qrt)
         if (
             "id" in qrt

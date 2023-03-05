@@ -111,18 +111,14 @@ async def dir_(sub_path):
     url = sub_path
     match = PATH_REGEX.search(url)
     if match is not None:
-        twitter_url = url
-
-        if match.start() == 0:
-            twitter_url = "https://twitter.com/" + url
-
+        twitter_url = "https://twitter.com/" + url
         if user_agent in GENERATE_EMBED_USER_AGENTS:
             return await embed_video(twitter_url)
         else:
             logger.info(" ➤ [ R ] Redirect to direct MP4 URL")
             return await direct_video(twitter_url)
     else:
-        return redirect(url, 301)
+        return redirect(url, HTTPStatus.MOVED_PERMANENTLY)
 
 
 @app.route("/favicon.ico")

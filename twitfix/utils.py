@@ -2,6 +2,7 @@ import re
 import textwrap
 import urllib.parse
 from datetime import datetime, timedelta
+from http import HTTPStatus
 
 from loguru import logger
 from quart import redirect, render_template
@@ -60,7 +61,7 @@ async def direct_video(video_link):
     # Just get a redirect to a MP4 link from any tweet link
     vnf, e = await vnf_from_cache_or_dl(video_link)
     if vnf is not None:
-        return redirect(vnf["url"], 301)
+        return redirect(vnf["url"], HTTPStatus.MOVED_PERMANENTLY)
     else:
         if e is not None:
             return await message(

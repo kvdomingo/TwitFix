@@ -1,14 +1,16 @@
 import os
+import re
 from http import HTTPStatus
 from io import BytesIO
+from urllib import parse
 
+from loguru import logger
 from quart import Quart, abort, redirect, request, send_file, send_from_directory
 from quart_cors import cors
 
-import combineImg
-import twitfix.constants
+from combineImg import gen_image_from_url
 from twitfix.config_handler import config
-from twitfix.constants import GENERATE_EMBED_USER_AGENTS, PATH_REGEX
+from twitfix.constants import APP_HOSTNAME, GENERATE_EMBED_USER_AGENTS, PATH_REGEX
 from twitfix.utils import (
     direct_video,
     embed_combined,
@@ -35,100 +37,69 @@ async def default():
         return redirect(config["config"]["repo"], HTTPStatus.MOVED_PERMANENTLY)
 
 
-@app.route("/oembed.json")  # oEmbed endpoint
+@app.route("/oembed.json")
 async def oembed_end():
-    desc = request.args.get("desc", None)
-    user = request.args.get("user", None)
-    link = request.args.get("link", None)
-    ttype = request.args.get("ttype", None)
+    # oEmbed endpoint
+    desc = request.args.get("desc")
+    user = request.args.get("user")
+    link = request.args.get("link")
+    ttype = request.args.get("ttype")
     return oembed_gen(desc, user, link, ttype)
 
 
-@app.route("/<path:sub_path>")  # Default endpoint used by everything
+@app.route("/<path:sub_path>")
 async def twitfix(sub_path):
+    # Default endpoint used by everything
     user_agent = request.headers.get("user-agent")
     match = PATH_REGEX.search(sub_path)
+    request_url = parse.urlparse(request.url)
 
-    if request.url.startswith("https://d.vx"):
-        # Matches d.fx? Try to give the user a direct link
-        if match.start() == 0:
-            twitter_url = "https://twitter.com/" + sub_path
+    if request_url.hostname.startswith(f"d.{APP_HOSTNAME[:2]}"):
+        twitter_url = parse.urlparse(f"https://twitter.com/{sub_path}")
         if user_agent in GENERATE_EMBED_USER_AGENTS:
-            print(" ➤ [ D ] d.vx link shown to discord user-agent!")
-            if request.url.endswith(".mp4") and "?" not in request.url:
-
-                if "?" not in request.url:
-                    clean = twitter_url[:-4]
-                else:
-                    clean = twitter_url
-
-                vnf, e = await vnf_from_cache_or_dl(clean)
-                if vnf is None:
-                    if e is not None:
-                        return await message(
-                            twitfix.constants.failed_to_scan
-                            + twitfix.constants.failed_to_scan_extra
-                            + e
-                        )
-                    return await message(twitfix.constants.failed_to_scan)
-                return await get_template("rawvideo.html", vnf, "", "", "", "", "", "")
-            else:
-                return await message(
-                    "To use a direct MP4 link in discord, remove anything past '?' and put '.mp4' at the end"
-                )
+            logger.info(" ➤ [ D ] d.vx link shown to discord user-agent!")
+            clean = twitter_url._replace(query="")
+            vnf, e = await vnf_from_cache_or_dl(clean.geturl())
+            if vnf is None:
+                if e is not None:
+                    return await message(
+                        twitfix.constants.FAILED_TO_SCAN
+                        + twitfix.constants.FAILED_TO_SCAN_EXTRA
+                        + e
+                    )
+                return await message(twitfix.constants.FAILED_TO_SCAN)
+            return await get_template("rawvideo.html", vnf, "", "", "", "", "", "")
         else:
-            print(" ➤ [ R ] Redirect to MP4 using d.fxtwitter.com")
+            logger.info(f" ➤ [ R ] Redirect to MP4 using {APP_HOSTNAME}")
             return await dir_(sub_path)
-    elif request.url.endswith(".mp4") or request.url.endswith("%2Emp4"):
-        twitter_url = "https://twitter.com/" + sub_path
-
-        if "?" not in request.url:
-            clean = twitter_url[:-4]
-        else:
-            clean = twitter_url
-
-        vnf, e = await vnf_from_cache_or_dl(clean)
+    elif request_url.path.endswith("mp4"):
+        twitter_url = parse.urlparse(f"https://twitter.com/{sub_path}")
+        clean = twitter_url._replace(query="")
+        vnf, e = await vnf_from_cache_or_dl(clean.geturl())
         if vnf is None:
             if e is not None:
                 return await message(
-                    twitfix.constants.failed_to_scan
-                    + twitfix.constants.failed_to_scan_extra
+                    twitfix.constants.FAILED_TO_SCAN
+                    + twitfix.constants.FAILED_TO_SCAN_EXTRA
                     + e
                 )
-            return await message(twitfix.constants.failed_to_scan)
+            return await message(twitfix.constants.FAILED_TO_SCAN)
         return await get_template("rawvideo.html", vnf, "", "", "", "", "", "")
 
-    elif (
-        request.url.endswith("/1")
-        or request.url.endswith("/2")
-        or request.url.endswith("/3")
-        or request.url.endswith("/4")
-        or request.url.endswith("%2F1")
-        or request.url.endswith("%2F2")
-        or request.url.endswith("%2F3")
-        or request.url.endswith("%2F4")
-    ):
-        twitter_url = "https://twitter.com/" + sub_path
-
-        if "?" not in request.url:
-            clean = twitter_url[:-2]
-        else:
-            clean = twitter_url
-
-        image = int(request.url[-1]) - 1
-        return await embed_video(clean, image)
+    elif re.search(r"(/|%2F)?[1234]$", request_url.path):
+        twitter_url = parse.urlparse(f"https://twitter.com/{sub_path}")
+        clean = twitter_url._replace(query="")
+        image = int(request_url.path[-1]) - 1
+        return await embed_video(clean.geturl(), image)
 
     if match is not None:
-        twitter_url = sub_path
-
-        if match.start() == 0:
-            twitter_url = "https://twitter.com/" + sub_path
+        twitter_url = parse.urlparse(f"https://twitter.com/{sub_path}")
 
         if user_agent in GENERATE_EMBED_USER_AGENTS:
-            return await embed_combined(twitter_url)
+            return await embed_combined(twitter_url.geturl())
         else:
-            print(" ➤ [ R ] Redirect to " + twitter_url)
-            return redirect(twitter_url, 301)
+            logger.info(f" ➤ [ R ] Redirect to {twitter_url.geturl()}")
+            return redirect(twitter_url.geturl(), HTTPStatus.MOVED_PERMANENTLY)
     else:
         return await message("This doesn't appear to be a twitter URL")
 
@@ -148,14 +119,14 @@ async def dir_(sub_path):
         if user_agent in GENERATE_EMBED_USER_AGENTS:
             return await embed_video(twitter_url)
         else:
-            print(" ➤ [ R ] Redirect to direct MP4 URL")
+            logger.info(" ➤ [ R ] Redirect to direct MP4 URL")
             return await direct_video(twitter_url)
     else:
         return redirect(url, 301)
 
 
 @app.route("/favicon.ico")
-async def favicon():  # pragma: no cover
+async def favicon():
     return send_from_directory(
         os.path.join(app.root_path, "static"),
         "favicon.ico",
@@ -188,7 +159,7 @@ async def render_combined():
     for img in images:
         if not img.startswith("https://pbs.twimg.com"):
             abort(400)
-    final_img = combineImg.genImageFromURL(images)
+    final_img = gen_image_from_url(images)
     img_io = BytesIO()
     final_img = final_img.convert("RGB")
     final_img.save(img_io, "JPEG", quality=70)

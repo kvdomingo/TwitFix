@@ -502,7 +502,7 @@ async def test_message404():
         "https://twitter.com/jack/status/12345", headers={"User-Agent": "test"}
     )
     assert resp.status_code == 200
-    assert constants.tweet_not_found in str(resp.data)
+    assert constants.TWEET_NOT_FOUND in str(resp.data)
 
 
 async def test_combine():

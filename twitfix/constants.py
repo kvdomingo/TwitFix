@@ -3,7 +3,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-PATH_REGEX = re.compile("\\w{1,15}\\/(status|statuses)\\/\\d{2,20}")
+PATH_REGEX = re.compile(r"\w{1,15}/(status|statuses)/\d{2,20}")
 
 GENERATE_EMBED_USER_AGENTS = [
     "facebookexternalhit/1.1",
@@ -22,12 +22,14 @@ GENERATE_EMBED_USER_AGENTS = [
     "test",
 ]
 
-failed_to_scan = "Failed to scan your link! This may be due to an incorrect link, private/suspended account, deleted tweet, or Twitter itself might be having issues (Check here: https://api.twitterstat.us/)"
+FAILED_TO_SCAN = "Failed to scan your link! This may be due to an incorrect link, private/suspended account, deleted tweet, or Twitter itself might be having issues (Check here: https://api.twitterstat.us/)"
 
-failed_to_scan_extra = "\n\nTwitter gave me this error: "
+FAILED_TO_SCAN_EXTRA = "\n\nTwitter gave me this error: "
 
-tweet_not_found = "Tweet not found."
+TWEET_NOT_FOUND = "Tweet not found."
 
-tweet_suspended = "This Tweet is from a suspended account."
+TWEET_SUSPENDED = "This Tweet is from a suspended account."
 
-tweet_desc_limit = 340
+TWEET_DESC_LIMIT = 340
+
+APP_HOSTNAME = "qxtwitter.com"

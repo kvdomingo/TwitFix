@@ -26,7 +26,7 @@ def oembed_gen(description, user, video_link, ttype):
     }
 
 
-async def vnf_from_cache_or_dl(video_link):
+async def vnf_from_cache_or_dl(video_link: str):
     cached_vnf = get_vnf_from_link_cache(video_link)
     if cached_vnf is None:
         try:
@@ -38,9 +38,9 @@ async def vnf_from_cache_or_dl(video_link):
                 "HTTP Error 404" in exErr.msg
                 or "No status found with that ID" in exErr.msg
             ):
-                exErr.msg = constants.tweet_not_found
+                exErr.msg = constants.TWEET_NOT_FOUND
             elif "suspended" in exErr.msg:
-                exErr.msg = constants.tweet_suspended
+                exErr.msg = constants.TWEET_SUSPENDED
             else:
                 exErr.msg = None
             return None, exErr.msg
@@ -64,9 +64,9 @@ async def direct_video(video_link):
     else:
         if e is not None:
             return await message(
-                constants.failed_to_scan + constants.failed_to_scan_extra + e
+                constants.FAILED_TO_SCAN + constants.FAILED_TO_SCAN_EXTRA + e
             )
-        return await message(constants.failed_to_scan)
+        return await message(constants.FAILED_TO_SCAN)
 
 
 async def direct_video_link(video_link):
@@ -77,9 +77,9 @@ async def direct_video_link(video_link):
     else:
         if e is not None:
             return await message(
-                constants.failed_to_scan + constants.failed_to_scan_extra + e
+                constants.FAILED_TO_SCAN + constants.FAILED_TO_SCAN_EXTRA + e
             )
-        return await message(constants.failed_to_scan)
+        return await message(constants.FAILED_TO_SCAN)
 
 
 async def embed_video(video_link, image=0):
@@ -91,9 +91,9 @@ async def embed_video(video_link, image=0):
     else:
         if e is not None:
             return await message(
-                constants.failed_to_scan + constants.failed_to_scan_extra + e
+                constants.FAILED_TO_SCAN + constants.FAILED_TO_SCAN_EXTRA + e
             )
-        return await message(constants.failed_to_scan)
+        return await message(constants.FAILED_TO_SCAN)
 
 
 def upgrade_vnf(vnf):
@@ -420,9 +420,9 @@ async def embed_combined(video_link):
     else:
         if e is not None:
             return await message(
-                constants.failed_to_scan + constants.failed_to_scan_extra + e
+                constants.FAILED_TO_SCAN + constants.FAILED_TO_SCAN_EXTRA + e
             )
-        return await message(constants.failed_to_scan)
+        return await message(constants.FAILED_TO_SCAN)
 
 
 async def embed_combined_vnf(video_link, vnf):

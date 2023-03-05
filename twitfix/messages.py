@@ -1,4 +1,4 @@
-from twitfix.constants import tweet_desc_limit
+from twitfix.constants import TWEET_DESC_LIMIT
 
 
 def gen_likes_display(vnf):
@@ -52,9 +52,9 @@ def format_embed_desc(type_, body, qrt, poll_display, likes_display):
         output = body + poll_display + likes_display
     else:
         output = body + likes_display
-    if len(output) > tweet_desc_limit:
+    if len(output) > TWEET_DESC_LIMIT:
         # find out how many characters we need to remove
-        diff = len(output) - tweet_desc_limit
+        diff = len(output) - TWEET_DESC_LIMIT
         # remove the characters from body, add ellipsis
         body = body[: -(diff + 1)] + "…"
         return format_embed_desc(type_, body, qrt, poll_display, likes_display)

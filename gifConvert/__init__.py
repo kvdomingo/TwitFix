@@ -1,12 +1,8 @@
-import base64
-import json
-import os
 import subprocess
-import sys
 import tempfile
 
 
-def extractStatus(url):
+def extract_status():
     return ""
 
 
@@ -75,33 +71,3 @@ def loop_video_until_length(filename, length):
         return new_filename
     else:
         return filename
-
-
-def lambda_handler(event, context):
-    if "queryStringParameters" not in event:
-        return {"statusCode": 400, "body": "Invalid request."}
-
-    url = event["queryStringParameters"].get("url", "")
-
-    # download video
-    videoLocation = tempfile.mkstemp(suffix=".mp4")[1]
-    subprocess.call(
-        ["wget", "-O", videoLocation, url],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.STDOUT,
-    )
-
-    videoLocationLooped = loop_video_until_length(videoLocation, 30)
-    if videoLocationLooped != videoLocation:
-        os.remove(videoLocation)
-        videoLocation = videoLocationLooped
-
-    with open(videoLocation, "rb") as image_file:
-        encoded_string = base64.b64encode(image_file.read()).decode("ascii")
-    os.remove(videoLocation)
-    return {
-        "statusCode": 200,
-        "headers": {"Content-Type": "video/mp4"},
-        "body": encoded_string,
-        "isBase64Encoded": True,
-    }

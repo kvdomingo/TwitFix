@@ -1,6 +1,9 @@
 FROM public.ecr.aws/lambda/python:3.8
+
 RUN yum -y update
+
 RUN yum -y install git && yum clean all
+
 RUN yum -y install tar gzip zlib freetype-devel \
     gcc \
     ghostscript \
@@ -22,10 +25,11 @@ RUN yum -y install tar gzip zlib freetype-devel \
     which \
     xorg-x11-server-Xvfb \
     zlib-devel \
-    && yum clean all
-RUN pip install -U --force-reinstall pillow-simd
-RUN pip install requests
+    && yum clean all \
 
+RUN pip install -U --force-reinstall pillow-simd
+
+RUN pip install requests
 
 # Copy function code
 COPY __init__.py ${LAMBDA_TASK_ROOT}/app.py

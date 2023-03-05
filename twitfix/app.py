@@ -1,5 +1,3 @@
-import quart.flask_patch  # isort:skip  # noqa
-
 import os
 import re
 from http import HTTPStatus
@@ -10,8 +8,7 @@ from loguru import logger
 from quart import Quart, abort, redirect, request, send_file, send_from_directory
 from quart_cors import cors
 
-from combine_img import gen_image_from_url
-from twitfix.cache import cache
+from combineImg import gen_image_from_url
 from twitfix.config_handler import config
 from twitfix.constants import APP_HOSTNAME, GENERATE_EMBED_USER_AGENTS, PATH_REGEX
 from twitfix.utils import (
@@ -26,7 +23,6 @@ from twitfix.utils import (
 
 app = Quart(__name__)
 app = cors(app, allow_origin="*")
-cache.init_app(app)
 
 
 @app.route("/")

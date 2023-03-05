@@ -18,7 +18,6 @@ RUN poetry export -f requirements.txt --without-hashes | pip install -r /dev/std
 
 WORKDIR /twitfix
 
-COPY --from=build /usr/local/bin/uwsgi /usr/local/bin/uwsgi
 COPY . .
 
 EXPOSE 9000

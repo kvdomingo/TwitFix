@@ -1,4 +1,7 @@
 import re
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 PATH_REGEX = re.compile("\\w{1,15}\\/(status|statuses)\\/\\d{2,20}")
 

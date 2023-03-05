@@ -3,13 +3,13 @@ import os
 os.environ["RUNNING_TESTS"] = "1"
 
 import cache
-from flask.testing import FlaskClient
+from quart.testing import QuartClient
 
 import twExtract
 from twitfix import constants, utils
 from twitfix.app import app
 
-client = FlaskClient(app)
+client = QuartClient(app)
 
 testTextTweet = "https://twitter.com/jack/status/20"
 testVideoTweet = "https://twitter.com/Twitter/status/1263145271946551300"
@@ -173,42 +173,41 @@ def test_poll_tweet_extract():
 # VNF conversion test
 
 
-def test_text_tweet_vnf():
-    vnf = utils.link_to_vnf_from_unofficial_api(testTextTweet)
+async def test_text_tweet_vnf():
+    vnf = await utils.link_to_vnf_from_unofficial_api(testTextTweet)
     compare_dict(textVNF_compare, vnf)
 
 
-def test_video_tweet_vnf():
-    vnf = utils.link_to_vnf_from_unofficial_api(testVideoTweet)
-
+async def test_video_tweet_vnf():
+    vnf = await utils.link_to_vnf_from_unofficial_api(testVideoTweet)
     compare_dict(videoVNF_compare, vnf)
 
 
-def test_media_tweet_vnf():
-    vnf = utils.link_to_vnf_from_unofficial_api(testMediaTweet)
+async def test_media_tweet_vnf():
+    vnf = await utils.link_to_vnf_from_unofficial_api(testMediaTweet)
     compare_dict(testMedia_compare, vnf)
 
 
-def test_multimedia_tweet_vnf():
-    vnf = utils.link_to_vnf_from_unofficial_api(testMultiMediaTweet)
+async def test_multimedia_tweet_vnf():
+    vnf = await utils.link_to_vnf_from_unofficial_api(testMultiMediaTweet)
     compare_dict(testMultiMedia_compare, vnf)
 
 
-def test_poll_tweet_vnf():
-    vnf = utils.link_to_vnf_from_unofficial_api(testPollTweet)
+async def test_poll_tweet_vnf():
+    vnf = await utils.link_to_vnf_from_unofficial_api(testPollTweet)
     compare_dict(testPoll_comparePollVNF, vnf["poll"])
 
 
-def test_qrt_tweet():
+async def test_qrt_tweet():
     cache.clear_cache()
     # this is an incredibly lazy test, todo: improve it in the future
-    resp = client.get(
+    resp = await client.get(
         testQRTTweet.replace("https://twitter.com", ""), headers={"User-Agent": "test"}
     )
     assert resp.status_code == 200
     assert "Twitter says I have 382 followers" in str(resp.data)
     # test qrt-ception
-    resp = client.get(
+    resp = await client.get(
         testQrtCeptionTweet.replace("https://twitter.com", ""),
         headers={"User-Agent": "test"},
     )  # get top level tweet
@@ -227,7 +226,7 @@ def test_qrt_tweet():
         )
         is None
     )  # check that the bottom level tweet has NOT been cached
-    resp = client.get(
+    resp = await client.get(
         "/EliLanger/status/585253161260216320", headers={"User-Agent": "test"}
     )  # get mid level tweet
     assert resp.status_code == 200
@@ -239,10 +238,10 @@ def test_qrt_tweet():
     )  # check that the bottom level tweet has been cached now
 
 
-def test_qrt_video_tweet():
+async def test_qrt_video_tweet():
     cache.clear_cache()
     # this is an incredibly lazy test, todo: improve it in the future
-    resp = client.get(
+    resp = await client.get(
         testQrtVideoTweet.replace("https://twitter.com", ""),
         headers={"User-Agent": "test"},
     )
@@ -254,12 +253,12 @@ def test_qrt_video_tweet():
 
 
 # Test adding to cache ; cache should be empty
-def test_add_to_cache():
+async def test_add_to_cache():
     cache.clear_cache()
-    utils.vnf_from_cache_or_dl(testTextTweet)
-    utils.vnf_from_cache_or_dl(testVideoTweet)
-    utils.vnf_from_cache_or_dl(testMediaTweet)
-    utils.vnf_from_cache_or_dl(testMultiMediaTweet)
+    await utils.vnf_from_cache_or_dl(testTextTweet)
+    await utils.vnf_from_cache_or_dl(testVideoTweet)
+    await utils.vnf_from_cache_or_dl(testMediaTweet)
+    await utils.vnf_from_cache_or_dl(testMultiMediaTweet)
     # retrieve
     compare_dict(textVNF_compare, cache.get_vnf_from_link_cache(testTextTweet))
     compare_dict(videoVNF_compare, cache.get_vnf_from_link_cache(testVideoTweet))
@@ -289,35 +288,35 @@ def test_embed_from_scratch():
     )
 
 
-def test_embed_from_cache():
+async def test_embed_from_cache():
     cache.clear_cache()
-    utils.vnf_from_cache_or_dl(testTextTweet)
-    utils.vnf_from_cache_or_dl(testVideoTweet)
-    utils.vnf_from_cache_or_dl(testMediaTweet)
-    utils.vnf_from_cache_or_dl(testMultiMediaTweet)
+    await utils.vnf_from_cache_or_dl(testTextTweet)
+    await utils.vnf_from_cache_or_dl(testVideoTweet)
+    await utils.vnf_from_cache_or_dl(testMediaTweet)
+    await utils.vnf_from_cache_or_dl(testMultiMediaTweet)
     # embed time
-    resp = client.get(
+    resp = await client.get(
         testTextTweet.replace("https://twitter.com", ""), headers={"User-Agent": "test"}
     )
     assert resp.status_code == 200
-    resp = client.get(
+    resp = await client.get(
         testVideoTweet.replace("https://twitter.com", ""),
         headers={"User-Agent": "test"},
     )
     assert resp.status_code == 200
-    resp = client.get(
+    resp = await client.get(
         testMediaTweet.replace("https://twitter.com", ""),
         headers={"User-Agent": "test"},
     )
     assert resp.status_code == 200
-    resp = client.get(
+    resp = await client.get(
         testMultiMediaTweet.replace("https://twitter.com", ""),
         headers={"User-Agent": "test"},
     )
     assert resp.status_code == 200
 
 
-def test_very_long_embed():
+async def test_very_long_embed():
     cache.clear_cache()
     cache.set_cache(
         {
@@ -340,14 +339,14 @@ def test_very_long_embed():
             }
         }
     )
-    resp = client.get(
+    resp = await client.get(
         "https://twitter.com/TEST/status/1234".replace("https://twitter.com", ""),
         headers={"User-Agent": "test"},
     )
     assert resp.status_code == 200
 
 
-def test_embed_from_outdated_cache():
+async def test_embed_from_outdated_cache():
     # presets a cache that has VNF's with missing fields; there's probably a better way to do this
     cache.set_cache(
         {
@@ -458,27 +457,27 @@ def test_embed_from_outdated_cache():
         }
     )
     # embed time
-    resp = client.get(
+    resp = await client.get(
         testTextTweet.replace("https://twitter.com", ""), headers={"User-Agent": "test"}
     )
     assert resp.status_code == 200
-    resp = client.get(
+    resp = await client.get(
         testVideoTweet.replace("https://twitter.com", ""),
         headers={"User-Agent": "test"},
     )
     assert resp.status_code == 200
-    resp = client.get(
+    resp = await client.get(
         testMediaTweet.replace("https://twitter.com", ""),
         headers={"User-Agent": "test"},
     )
     assert resp.status_code == 200
-    resp = client.get(
+    resp = await client.get(
         testMultiMediaTweet.replace("https://twitter.com", ""),
         headers={"User-Agent": "test"},
     )
     assert resp.status_code == 200
     # qrt
-    resp = client.get(
+    resp = await client.get(
         testQrtVideoTweet.replace("https://twitter.com", ""),
         headers={"User-Agent": "test"},
     )
@@ -489,8 +488,8 @@ def test_embed_from_outdated_cache():
     )
 
 
-def test_directEmbed():
-    resp = client.get(
+async def test_directEmbed():
+    resp = await client.get(
         testVideoTweet.replace("https://twitter.com", "") + ".mp4",
         headers={"User-Agent": "test"},
     )
@@ -498,21 +497,21 @@ def test_directEmbed():
     assert videoVNF_compare["url"] in str(resp.data)
 
 
-def test_message404():
-    resp = client.get(
+async def test_message404():
+    resp = await client.get(
         "https://twitter.com/jack/status/12345", headers={"User-Agent": "test"}
     )
     assert resp.status_code == 200
     assert constants.tweet_not_found in str(resp.data)
 
 
-def test_combine():
-    twt, e = utils.vnf_from_cache_or_dl(testMultiMediaTweet)
+async def test_combine():
+    twt, e = await utils.vnf_from_cache_or_dl(testMultiMediaTweet)
     img1 = twt["images"][0]
     img2 = twt["images"][1]
-    resp = client.get(
+    resp = await client.get(
         f"/rendercombined.jpg?imgs={img1},{img2}", headers={"User-Agent": "test"}
     )
     assert resp.status_code == 200
     assert resp.headers["Content-Type"] == "image/jpeg"
-    assert len(resp.data) > 1000
+    assert len(await resp.data) > 1000

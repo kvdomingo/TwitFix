@@ -1,6 +1,6 @@
 FROM public.ecr.aws/lambda/python:3.8
-RUN pip install yt-dlp
 
+RUN pip install yt-dlp
 
 # Copy function code
 COPY __init__.py ${LAMBDA_TASK_ROOT}/app.py

@@ -1,7 +1,9 @@
 import json
 import os
 
-if "RUNNING_TESTS" in os.environ:
+from twitfix.constants import BASE_DIR
+
+if os.environ.get("RUNNING_TESTS"):
     config = {
         "config": {
             "link_cache": "ram",
@@ -15,9 +17,7 @@ if "RUNNING_TESTS" in os.environ:
             "gifConvertAPI": "",
         }
     }
-elif (
-    "RUNNING_SERVERLESS" in os.environ and os.environ["RUNNING_SERVERLESS"] == "1"
-):  # pragma: no cover
+elif os.environ.get("RUNNING_SERVERLESS") == "1":  # pragma: no cover
     config = {
         "config": {
             "link_cache": os.environ["VXTWITTER_LINK_CACHE"],
@@ -35,8 +35,8 @@ elif (
     }
 else:
     # Read config from config.json. If it does not exist, create new.
-    if not os.path.exists("config.json"):
-        with open("config.json", "w") as outfile:
+    if not (path := BASE_DIR / "twitfix" / "config.json").exists():
+        with open(path, "w+") as outfile:
             default_config = {
                 "config": {
                     "link_cache": "json",
@@ -52,9 +52,7 @@ else:
             }
 
             json.dump(default_config, outfile, indent=4, sort_keys=True)
-
         config = default_config
     else:
-        f = open("config.json")
-        config = json.load(f)
-        f.close()
+        with open(path, "r") as f:
+            config = json.load(f)

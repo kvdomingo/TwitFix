@@ -17,7 +17,7 @@ def gen_poll_display(poll):
         output += (
             choice["text"]
             + "\n"
-            + ("█" * int(choice["percent"] / pctSplit))
+            + ("█" * int(choice["percent"] / pct_split))
             + " "
             + str(choice["percent"])
             + "%\n"
@@ -27,7 +27,6 @@ def gen_poll_display(poll):
 
 def format_embed_desc(type_, body, qrt, poll_display, likes_display):
     # Trim the embed description to 248 characters, prioritizing poll and likes
-    output = ""
     if poll_display is None:
         poll_display = ""
 

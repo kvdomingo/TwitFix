@@ -3,12 +3,13 @@ import textwrap
 import urllib.parse
 from datetime import datetime, timedelta
 
-from flask import redirect, render_template
+from loguru import logger
+from quart import redirect, render_template
 from yt_dlp.utils import ExtractorError
 
-import twExtract as twExtract
-import twitfix.constants
-from twitfix import messages
+from twExtract import extract_status
+from twExtract.twExtractError import TwExtractError
+from twitfix import constants, messages
 from twitfix.cache import add_vnf_to_link_cache, get_vnf_from_link_cache
 from twitfix.config_handler import config
 
@@ -25,26 +26,26 @@ def oembed_gen(description, user, video_link, ttype):
     }
 
 
-def vnf_from_cache_or_dl(video_link):
+async def vnf_from_cache_or_dl(video_link):
     cached_vnf = get_vnf_from_link_cache(video_link)
     if cached_vnf is None:
         try:
-            vnf = link_to_vnf(video_link)
+            vnf = await link_to_vnf(video_link)
             add_vnf_to_link_cache(video_link, vnf)
             return vnf, None
-        except (ExtractorError, twExtract.twExtractError.TwExtractError) as exErr:
+        except (ExtractorError, TwExtractError) as exErr:
             if (
                 "HTTP Error 404" in exErr.msg
                 or "No status found with that ID" in exErr.msg
             ):
-                exErr.msg = twitfix.constants.tweet_not_found
+                exErr.msg = constants.tweet_not_found
             elif "suspended" in exErr.msg:
-                exErr.msg = twitfix.constants.tweet_suspended
+                exErr.msg = constants.tweet_suspended
             else:
                 exErr.msg = None
             return None, exErr.msg
         except Exception as e:
-            print(e)
+            logger.error(e)
             return None, None
     else:
         return upgrade_vnf(cached_vnf), None
@@ -55,50 +56,44 @@ def get_default_ttl():
     return datetime.today().replace(microsecond=0) + timedelta(days=1)
 
 
-def direct_video(video_link):
+async def direct_video(video_link):
     # Just get a redirect to a MP4 link from any tweet link
-    vnf, e = vnf_from_cache_or_dl(video_link)
+    vnf, e = await vnf_from_cache_or_dl(video_link)
     if vnf is not None:
         return redirect(vnf["url"], 301)
     else:
         if e is not None:
-            return message(
-                twitfix.constants.failed_to_scan
-                + twitfix.constants.failed_to_scan_extra
-                + e
+            return await message(
+                constants.failed_to_scan + constants.failed_to_scan_extra + e
             )
-        return message(twitfix.constants.failed_to_scan)
+        return await message(constants.failed_to_scan)
 
 
-def direct_video_link(video_link):
+async def direct_video_link(video_link):
     # Just get a redirect to a MP4 link from any tweet link
-    vnf, e = vnf_from_cache_or_dl(video_link)
+    vnf, e = await vnf_from_cache_or_dl(video_link)
     if vnf is not None:
         return vnf["url"]
     else:
         if e is not None:
-            return message(
-                twitfix.constants.failed_to_scan
-                + twitfix.constants.failed_to_scan_extra
-                + e
+            return await message(
+                constants.failed_to_scan + constants.failed_to_scan_extra + e
             )
-        return message(twitfix.constants.failed_to_scan)
+        return await message(constants.failed_to_scan)
 
 
-def embed_video(video_link, image=0):
+async def embed_video(video_link, image=0):
     # Return Embed from any tweet link
-    vnf, e = vnf_from_cache_or_dl(video_link)
+    vnf, e = await vnf_from_cache_or_dl(video_link)
 
     if vnf is not None:
-        return embed(video_link, vnf, image)
+        return await embed(video_link, vnf, image)
     else:
         if e is not None:
-            return message(
-                twitfix.constants.failed_to_scan
-                + twitfix.constants.failed_to_scan_extra
-                + e
+            return await message(
+                constants.failed_to_scan + constants.failed_to_scan_extra + e
             )
-        return message(twitfix.constants.failed_to_scan)
+        return await message(constants.failed_to_scan)
 
 
 def upgrade_vnf(vnf):
@@ -176,39 +171,40 @@ def tweet_info(
 
 def link_to_vnf_from_tweet_data(tweet, video_link):
     images = [""] * 5
-    print(" ➤ [ + ] Tweet Type: " + tweet_type(tweet))
+    logger.info(" ➤ [ + ] Tweet Type: " + tweet_type(tweet))
     is_gif = False
     # Check to see if tweet has a video, if not, make the url passed to the VNF the first t.co link in the tweet
-    if tweet_type(tweet) == "Video":
-        if tweet["extended_entities"]["media"][0]["video_info"]["variants"]:
-            best_bitrate = -1
-            thumb = tweet["extended_entities"]["media"][0]["media_url"]
-            size = tweet["extended_entities"]["media"][0]["original_info"]
-            for video in tweet["extended_entities"]["media"][0]["video_info"][
-                "variants"
-            ]:
-                if (
-                    video["content_type"] == "video/mp4"
-                    and video["bitrate"] > best_bitrate
-                ):
-                    url = video["url"]
-                    best_bitrate = video["bitrate"]
-    elif tweet_type(tweet) == "Text":
-        url = ""
-        thumb = ""
-        size = {}
-    else:
-        images = [""] * 5
-        i = 0
-        for media in tweet["extended_entities"]["media"]:
-            images[i] = media["media_url_https"]
-            i = i + 1
+    match tweet_type(tweet):
+        case "Video":
+            if tweet["extended_entities"]["media"][0]["video_info"]["variants"]:
+                best_bitrate = -1
+                thumb = tweet["extended_entities"]["media"][0]["media_url"]
+                size = tweet["extended_entities"]["media"][0]["original_info"]
+                for video in tweet["extended_entities"]["media"][0]["video_info"][
+                    "variants"
+                ]:
+                    if (
+                        video["content_type"] == "video/mp4"
+                        and video["bitrate"] > best_bitrate
+                    ):
+                        url = video["url"]
+                        best_bitrate = video["bitrate"]
+        case "Text":
+            url = ""
+            thumb = ""
+            size = {}
+        case _:
+            images = [""] * 5
+            i = 0
+            for media in tweet["extended_entities"]["media"]:
+                images[i] = media["media_url_https"]
+                i = i + 1
 
-        images[4] = str(i)
-        url = ""
-        images = images
-        thumb = tweet["extended_entities"]["media"][0]["media_url_https"]
-        size = {}
+            images[4] = str(i)
+            url = ""
+            images = images
+            thumb = tweet["extended_entities"]["media"][0]["media_url_https"]
+            size = {}
 
     if (
         "extended_entities" in tweet
@@ -270,20 +266,21 @@ def link_to_vnf_from_tweet_data(tweet, video_link):
     return vnf
 
 
-def link_to_vnf_from_unofficial_api(video_link):
-    tweet = None
-    print(" ➤ [ + ] Attempting to download tweet info from UNOFFICIAL Twitter API")
-    tweet = twExtract.extractStatus(video_link)
-    print(" ➤ [ ✔ ] Unofficial API Success")
+async def link_to_vnf_from_unofficial_api(video_link):
+    logger.info(
+        " ➤ [ + ] Attempting to download tweet info from UNOFFICIAL Twitter API"
+    )
+    tweet = await extract_status(video_link)
+    logger.success(" ➤ [ ✔ ] Unofficial API Success")
     return link_to_vnf_from_tweet_data(tweet, video_link)
 
 
-def link_to_vnf(video_link):
+async def link_to_vnf(video_link):
     # Return a VideoInfo object or die trying
-    return link_to_vnf_from_unofficial_api(video_link)
+    return await link_to_vnf_from_unofficial_api(video_link)
 
 
-def get_template(
+async def get_template(
     template,
     vnf,
     desc,
@@ -300,7 +297,7 @@ def get_template(
     if "width" in embed_vnf["size"] and "height" in embed_vnf["size"]:
         embed_vnf["size"]["width"] = min(embed_vnf["size"]["width"], 2000)
         embed_vnf["size"]["height"] = min(embed_vnf["size"]["height"], 2000)
-    return render_template(
+    return await render_template(
         template,
         likes=vnf["likes"],
         rts=vnf["rts"],
@@ -327,8 +324,8 @@ def get_template(
     )
 
 
-def embed(video_link, vnf, image):
-    print(" ➤ [ E ] Embedding " + vnf["type"] + ": " + video_link)
+async def embed(video_link, vnf, image):
+    logger.info(" ➤ [ E ] Embedding " + vnf["type"] + ": " + video_link)
 
     desc = re.sub(r" http.*t\.co\S+", "", vnf["description"])
     url_user = urllib.parse.quote(vnf["uploader"])
@@ -343,7 +340,7 @@ def embed(video_link, vnf, image):
 
     qrt = None
     if vnf["qrtURL"] is not None:
-        qrt, e = vnf_from_cache_or_dl(vnf["qrtURL"])
+        qrt, e = await vnf_from_cache_or_dl(vnf["qrtURL"])
         if qrt is not None:
             desc = messages.format_embed_desc(
                 vnf["type"], desc, qrt, poll_display, like_display
@@ -354,56 +351,54 @@ def embed(video_link, vnf, image):
         )
     embed_vnf = None
     app_name_post = ""
-    if vnf["type"] == "Text":  # Change the template based on tweet type
-        template = "text.html"
-        if qrt is not None and qrt["type"] != "Text":
-            embed_vnf = qrt
-            if qrt["type"] == "Image":
-                if embed_vnf["images"][4] != "1":
-                    app_name_post = (
-                        " - Image " + str(image + 1) + "/" + str(vnf["images"][4])
+
+    match vnf["type"]:
+        # Change the template based on tweet type
+        case "Text":
+            template = "text.html"
+            if qrt is not None and qrt["type"] != "Text":
+                embed_vnf = qrt
+                if qrt["type"] == "Image":
+                    if embed_vnf["images"][4] != "1":
+                        app_name_post = (
+                            " - Image " + str(image + 1) + "/" + str(vnf["images"][4])
+                        )
+                    image = embed_vnf["images"][image]
+                    template = "image.html"
+                elif qrt["type"] == "Video" or qrt["type"] == "":
+                    url_desc = urllib.parse.quote(
+                        textwrap.shorten(desc, width=220, placeholder="...")
                     )
-                image = embed_vnf["images"][image]
-                template = "image.html"
-            elif qrt["type"] == "Video" or qrt["type"] == "":
-                url_desc = urllib.parse.quote(
-                    textwrap.shorten(desc, width=220, placeholder="...")
+                    template = "video.html"
+        case "Image":
+            if vnf["images"][4] != "1":
+                app_name_post = (
+                    " - Image " + str(image + 1) + "/" + str(vnf["images"][4])
                 )
-                template = "video.html"
-
-    if vnf["type"] == "Image":
-        if vnf["images"][4] != "1":
-            app_name_post = " - Image " + str(image + 1) + "/" + str(vnf["images"][4])
-        image = vnf["images"][image]
-        template = "image.html"
-
-    if vnf["type"] == "Video":
-        if (
-            vnf["isGif"]
-            and config["config"]["gifConvertAPI"] != ""
-            and config["config"]["gifConvertAPI"] != "none"
-        ):
-            vnf[
-                "url"
-            ] = f"{config['config']['gifConvertAPI']}/convert.mp4?url={vnf['url']}"
-            app_name_post = " - GIF"
-        url_desc = urllib.parse.quote(
-            textwrap.shorten(desc, width=220, placeholder="...")
-        )
-        template = "video.html"
-
-    if vnf["type"] == "":
-        url_desc = urllib.parse.quote(
-            textwrap.shorten(desc, width=220, placeholder="...")
-        )
-        template = "video.html"
+            image = vnf["images"][image]
+            template = "image.html"
+        case "Video":
+            if vnf["isGif"] and config["config"]["gifConvertAPI"] not in ["", "none"]:
+                vnf[
+                    "url"
+                ] = f"{config['config']['gifConvertAPI']}/convert.mp4?url={vnf['url']}"
+                app_name_post = " - GIF"
+            url_desc = urllib.parse.quote(
+                textwrap.shorten(desc, width=220, placeholder="...")
+            )
+            template = "video.html"
+        case _:
+            url_desc = urllib.parse.quote(
+                textwrap.shorten(desc, width=220, placeholder="...")
+            )
+            template = "video.html"
 
     color = "#7FFFD4"  # Green
 
     if vnf["nsfw"]:
         color = "#800020"  # Red
 
-    return get_template(
+    return await get_template(
         template,
         vnf,
         desc,
@@ -417,22 +412,20 @@ def embed(video_link, vnf, image):
     )
 
 
-def embed_combined(video_link):
-    vnf, e = vnf_from_cache_or_dl(video_link)
+async def embed_combined(video_link):
+    vnf, e = await vnf_from_cache_or_dl(video_link)
 
     if vnf is not None:
-        return embed_combined_vnf(video_link, vnf)
+        return await embed_combined_vnf(video_link, vnf)
     else:
         if e is not None:
-            return message(
-                twitfix.constants.failed_to_scan
-                + twitfix.constants.failed_to_scan_extra
-                + e
+            return await message(
+                constants.failed_to_scan + constants.failed_to_scan_extra + e
             )
-        return message(twitfix.constants.failed_to_scan)
+        return await message(constants.failed_to_scan)
 
 
-def embed_combined_vnf(video_link, vnf):
+async def embed_combined_vnf(video_link, vnf):
     if vnf["type"] != "Image" or vnf["images"][4] == "1":
         return embed(video_link, vnf, 0)
 
@@ -448,7 +441,7 @@ def embed_combined_vnf(video_link, vnf):
         poll_display = ""
 
     if vnf["qrtURL"] is not None:
-        qrt, e = vnf_from_cache_or_dl(vnf["qrtURL"])
+        qrt, e = await vnf_from_cache_or_dl(vnf["qrtURL"])
         if qrt is not None:
             desc = messages.format_embed_desc(
                 vnf["type"], desc, qrt, poll_display, like_display
@@ -463,7 +456,7 @@ def embed_combined_vnf(video_link, vnf):
 
     if vnf["nsfw"]:
         color = "#800020"  # Red
-    return get_template(
+    return await get_template(
         "image.html",
         vnf,
         desc,
@@ -509,12 +502,11 @@ def tweet_type(tweet):
             out = "Image"
     else:
         out = "Text"
-
     return out
 
 
-def message(text):
-    return render_template(
+async def message(text):
+    return await render_template(
         "default.html",
         message=text,
         color=config["config"]["color"],

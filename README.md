@@ -1,4 +1,4 @@
-# vxTwitter
+# qxTwitter
 (A fork of TwitFix)
 Basic flask server that serves fixed twitter video embeds to desktop discord by using either the Twitter API or Youtube-DL to grab tweet video information. This also automatically embeds the first link in the text of non video tweets (API Only)
 
@@ -14,10 +14,10 @@ just put the url to the server, and directly after, the full URL to the tweet yo
 **I now have a copy of this running on a Linode server, you can use it via the following url**
 
 ```
-https://vxtwitter.com/[twitter video url] or [last half of twitter url] (everything past twitter.com/)
+https://qxtwitter.com/[twitter video url] or [last half of twitter url] (everything past twitter.com/)
 ```
 
-You can also simply type out 'vx' directly before 'twitter.com' in any valid twitter video url, and that will convert it into a working vxTwitter url, for example:
+You can also simply type out 'qx' directly before 'twitter.com' in any valid twitter video url, and that will convert it into a working qxTwitter url, for example:
 
 **Note**: If you enjoy this service, please considering donating via [Ko-Fi](https://ko-fi.com/dylanpdx) to help cover server costs
 
@@ -31,7 +31,7 @@ I have included some files to give you a head start on setting this server up wi
 
 ### Config
 
-vxTwitter generates a config.json in its root directory the first time you run it, the options are:
+qxTwitter generates a config.json in its root directory the first time you run it, the options are:
 
 **API** - This will be where you put the credentials for your twitter API if you use this method
 
@@ -52,7 +52,7 @@ vxTwitter generates a config.json in its root directory the first time you run i
 
 **url** - used to tell the user where to look for the oembed endpoint, make sure to set this to your public facing url
 
-**combination_method** - using c.vxtwitter as the url causes vxTwitter to combine all images in the post into one. This is CPU intensive, so you might not want it running on the same machine that's serving requests. When `combination_method` is set to `local`, it will use the local machine to combine the images. This requires pillow to be installed. If you want to use another server, replace `local` with the URL to the endpoint which combines images. Both methods use the code in the `combine_img` module. Inside, there's also a `Dockerfile` intended to be deployed as a combination endpoint on an [AWS Lambda function](https://docs.aws.amazon.com/lambda/latest/dg/images-create.html).
+**combination_method** - using c.qxtwitter as the url causes qxTwitter to combine all images in the post into one. This is CPU intensive, so you might not want it running on the same machine that's serving requests. When `combination_method` is set to `local`, it will use the local machine to combine the images. This requires pillow to be installed. If you want to use another server, replace `local` with the URL to the endpoint which combines images. Both methods use the code in the `combine_img` module. Inside, there's also a `Dockerfile` intended to be deployed as a combination endpoint on an [AWS Lambda function](https://docs.aws.amazon.com/lambda/latest/dg/images-create.html).
 
 ## Other stuff
 

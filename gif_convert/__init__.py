@@ -53,7 +53,7 @@ def loop_video_until_length(filename, length):
     if video_length < length:
         loops = int(length / video_length)
         new_filename = tempfile.mkstemp(suffix=".mp4")[1]
-        out = subprocess.call(
+        subprocess.call(
             [
                 "./ffmpeg",
                 "-stream_loop",

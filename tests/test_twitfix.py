@@ -9,8 +9,9 @@ from loguru import logger
 from quart.testing import QuartClient
 
 from twExtract import extract_status
-from twitfix import cache, constants, utils
+from twitfix import constants, utils
 from twitfix.app import app
+from twitfix.cache import cache
 
 client = QuartClient(app)
 

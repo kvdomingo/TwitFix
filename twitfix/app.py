@@ -11,7 +11,6 @@ from quart import Quart, abort, redirect, request, send_file, send_from_director
 from quart_cors import cors
 
 from combine_img import gen_image_from_url
-from twitfix.cache import cache
 from twitfix.config_handler import config
 from twitfix.constants import APP_HOSTNAME, GENERATE_EMBED_USER_AGENTS, PATH_REGEX
 from twitfix.utils import (
@@ -26,7 +25,6 @@ from twitfix.utils import (
 
 app = Quart(__name__)
 app = cors(app, allow_origin="*")
-cache.init_app(app)
 
 
 @app.route("/")

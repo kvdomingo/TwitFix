@@ -10,7 +10,7 @@ from yt_dlp.utils import ExtractorError
 from twExtract import extract_status
 from twExtract.twExtractError import TwExtractError
 from twitfix import constants, messages
-from twitfix.cache import add_vnf_to_link_cache, get_vnf_from_link_cache
+from twitfix.cache import cache
 from twitfix.config_handler import config
 
 
@@ -27,11 +27,11 @@ def oembed_gen(description, user, video_link, ttype):
 
 
 async def vnf_from_cache_or_dl(video_link: str):
-    cached_vnf = get_vnf_from_link_cache(video_link)
+    cached_vnf = cache.get_vnf_from_link_cache(video_link)
     if cached_vnf is None:
         try:
             vnf = await link_to_vnf(video_link)
-            add_vnf_to_link_cache(video_link, vnf)
+            cache.add_vnf_to_link_cache(video_link, vnf)
             return vnf, None
         except (ExtractorError, TwExtractError) as exErr:
             if (

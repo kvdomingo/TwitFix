@@ -1,5 +1,4 @@
 # flake8: noqa: E402
-import quart.flask_patch  # isort:skip
 import os
 
 os.environ["RUNNING_TESTS"] = "1"

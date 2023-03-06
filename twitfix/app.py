@@ -1,5 +1,3 @@
-import quart.flask_patch  # isort:skip  # noqa
-
 import os
 import re
 from http import HTTPStatus
